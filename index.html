@@ -117,19 +117,6 @@
         .results p {
             margin-bottom: 0.5rem;
         }
-        .loading-spinner {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #667eea;
-            border-radius: 50%;
-            width: 24px;
-            height: 24px;
-            animation: spin 1s linear infinite;
-            margin: 1rem auto;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
     </style>
 </head>
 <body class="p-4">
@@ -151,14 +138,6 @@
             </div>
             <button class="button w-full" onclick="calcularAhorroPotencial()">Calcular Ahorro Potencial</button>
             <div id="ahorroPotencialResult" class="results hidden"></div>
-
-            <h3 class="mt-6">✨ Consejos Personalizados para Ahorrar ✨</h3>
-            <p>Una vez que sepas tu ahorro potencial, la IA te dará algunos consejos para empezar a gestionarlo.</p>
-            <button class="button w-full" onclick="generarConsejosAhorro()">Generar Consejos</button>
-            <div id="consejosAhorroResult" class="results hidden">
-                <div id="consejosAhorroLoading" class="loading-spinner hidden"></div>
-                <p id="consejosAhorroText"></p>
-            </div>
         </div>
 
         <div class="section-card">
@@ -200,26 +179,6 @@
             <p class="text-center mt-4">
                 
             </p>
-
-            <h3 class="mt-6">✨ Proyección de Ahorro con Interés Compuesto ✨</h3>
-            <p>¿Quieres ver cómo podría crecer tu dinero a largo plazo? Introduce algunos datos y la IA te dará una idea.</p>
-            <div class="input-group">
-                <label for="aporteMensual">Aporte mensual al fondo indexado (€):</label>
-                <input type="number" id="aporteMensual" placeholder="Ej: 50" min="0">
-            </div>
-            <div class="input-group">
-                <label for="rentabilidadAnual">Rentabilidad anual esperada (%):</label>
-                <input type="number" id="rentabilidadAnual" placeholder="Ej: 10" min="0" max="100">
-            </div>
-            <div class="input-group">
-                <label for="aniosProyeccion">Años de inversión:</label>
-                <input type="number" id="aniosProyeccion" placeholder="Ej: 10" min="1" max="50">
-            </div>
-            <button class="button w-full" onclick="generarProyeccion()">Generar Proyección</button>
-            <div id="proyeccionResult" class="results hidden">
-                <div id="proyeccionLoading" class="loading-spinner hidden"></div>
-                <p id="proyeccionText"></p>
-            </div>
         </div>
 
         <h2>Resumen y Siguientes Pasos:</h2>
@@ -237,7 +196,7 @@
     <script>
         let ahorroPotencialGlobal = 0; // Variable para almacenar el ahorro potencial
 
-        async function calcularAhorroPotencial() {
+        function calcularAhorroPotencial() {
             const ingresos = parseFloat(document.getElementById('ingresos').value);
             const gastos = parseFloat(document.getElementById('gastos').value);
             const resultDiv = document.getElementById('ahorroPotencialResult');
@@ -259,106 +218,6 @@
                                       <p>Este es el dinero que puedes destinar a tus tres bolsas de ahorro cada mes.</p>`;
             }
             resultDiv.classList.remove('hidden');
-        }
-
-        async function generarConsejosAhorro() {
-            const consejosResultDiv = document.getElementById('consejosAhorroResult');
-            const consejosTextP = document.getElementById('consejosAhorroText');
-            const consejosLoadingDiv = document.getElementById('consejosAhorroLoading');
-
-            if (ahorroPotencialGlobal === 0 && (isNaN(parseFloat(document.getElementById('ingresos').value)) || isNaN(parseFloat(document.getElementById('gastos').value)))) {
-                consejosTextP.innerHTML = '<p class="text-red-600">Por favor, calcula primero tu ahorro potencial en el paso 0.</p>';
-                consejosResultDiv.classList.remove('hidden');
-                return;
-            }
-
-            consejosResultDiv.classList.remove('hidden');
-            consejosLoadingDiv.classList.remove('hidden');
-            consejosTextP.innerHTML = '';
-
-            try {
-                const prompt = `Eres un asesor financiero amigable. Una joven ha calculado que su ahorro potencial mensual es de ${ahorroPotencialGlobal.toFixed(2)}€. Dale 3-5 consejos prácticos y motivadores para maximizar este ahorro o para empezar a implementarlo en sus 'tres bolsas' (colchón de seguridad, objetivos a corto plazo, fondo indexado). Adapta los consejos a su situación de bajos ingresos iniciales y el apoyo familiar.`;
-
-                let chatHistory = [];
-                chatHistory.push({ role: "user", parts: [{ text: prompt }] });
-                const payload = { contents: chatHistory };
-                // ¡IMPORTANTE! Reemplaza "TU_CLAVE_DE_API_AQUI" con tu clave real de la API de Gemini
-                const apiKey = "TU_CLAVE_DE_API_AQUI"; 
-                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
-
-                const response = await fetch(apiUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                const result = await response.json();
-
-                if (result.candidates && result.candidates.length > 0 &&
-                    result.candidates[0].content && result.candidates[0].content.parts &&
-                    result.candidates[0].content.parts.length > 0) {
-                    const text = result.candidates[0].content.parts[0].text;
-                    consejosTextP.innerHTML = text.replace(/\n/g, '<br>'); // Replace newlines with <br> for HTML display
-                } else {
-                    consejosTextP.innerHTML = '<p class="text-red-600">Lo siento, no pude generar los consejos. Inténtalo de nuevo.</p>';
-                }
-            } catch (error) {
-                console.error("Error al generar consejos:", error);
-                consejosTextP.innerHTML = '<p class="text-red-600">Ocurrió un error al conectar con la IA. Por favor, inténtalo de nuevo más tarde.</p>';
-            } finally {
-                consejosLoadingDiv.classList.add('hidden');
-            }
-        }
-
-        async function generarProyeccion() {
-            const aporteMensual = parseFloat(document.getElementById('aporteMensual').value);
-            const rentabilidadAnual = parseFloat(document.getElementById('rentabilidadAnual').value);
-            const aniosProyeccion = parseFloat(document.getElementById('aniosProyeccion').value);
-
-            const proyeccionResultDiv = document.getElementById('proyeccionResult');
-            const proyeccionTextP = document.getElementById('proyeccionText');
-            const proyeccionLoadingDiv = document.getElementById('proyeccionLoading');
-
-            if (isNaN(aporteMensual) || isNaN(rentabilidadAnual) || isNaN(aniosProyeccion) || aporteMensual <= 0 || rentabilidadAnual <= 0 || aniosProyeccion <= 0) {
-                proyeccionTextP.innerHTML = '<p class="text-red-600">Por favor, introduce valores numéricos válidos y positivos para todos los campos.</p>';
-                proyeccionResultDiv.classList.remove('hidden');
-                return;
-            }
-
-            proyeccionResultDiv.classList.remove('hidden');
-            proyeccionLoadingDiv.classList.remove('hidden');
-            proyeccionTextP.innerHTML = '';
-
-            try {
-                const prompt = `Eres un experto en finanzas personales y estás explicando el poder del interés compuesto a una joven de 18 años. Ella planea invertir ${aporteMensual.toFixed(2)}€ al mes con una rentabilidad anual del ${rentabilidadAnual.toFixed(2)}%. Explícale de forma sencilla y motivadora cuánto dinero podría acumular aproximadamente en ${aniosProyeccion} años, enfatizando la importancia de la constancia y el tiempo. Usa un tono cercano y alentador. No incluyas cálculos matemáticos explícitos, solo el resultado aproximado y la explicación del concepto.`;
-
-                let chatHistory = [];
-                chatHistory.push({ role: "user", parts: [{ text: prompt }] });
-                const payload = { contents: chatHistory };
-                // ¡IMPORTANTE! Reemplaza "TU_CLAVE_DE_API_AQUI" con tu clave real de la API de Gemini
-                const apiKey = "AIzaSyBE5I23YyuI3bfEahNuUIBwqikuxqR1Eiw"; 
-                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
-
-                const response = await fetch(apiUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                const result = await response.json();
-
-                if (result.candidates && result.candidates.length > 0 &&
-                    result.candidates[0].content && result.candidates[0].content.parts &&
-                    result.candidates[0].content.parts.length > 0) {
-                    const text = result.candidates[0].content.parts[0].text;
-                    proyeccionTextP.innerHTML = text.replace(/\n/g, '<br>'); // Replace newlines with <br> for HTML display
-                } else {
-                    proyeccionTextP.innerHTML = '<p class="text-red-600">Lo siento, no pude generar la proyección. Inténtalo de nuevo.</p>';
-                }
-            } catch (error) {
-                console.error("Error al generar proyección:", error);
-                proyeccionTextP.innerHTML = '<p class="text-red-600">Ocurrió un error al conectar con la IA. Por favor, inténtalo de nuevo más tarde.</p>';
-            } finally {
-                proyeccionLoadingDiv.classList.add('hidden');
-            }
         }
     </script>
 </body>
